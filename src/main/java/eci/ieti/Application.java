@@ -2,14 +2,26 @@ package eci.ieti;
 
 import eci.ieti.data.CustomerRepository;
 import eci.ieti.data.ProductRepository;
+import eci.ieti.data.TodoRepository;
+import eci.ieti.data.UserRepository;
 import eci.ieti.data.model.Customer;
 import eci.ieti.data.model.Product;
 
+import eci.ieti.data.model.Todo;
+import eci.ieti.data.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+
+
+import java.util.Date;
 
 @SpringBootApplication
 public class Application implements CommandLineRunner {
@@ -20,13 +32,31 @@ public class Application implements CommandLineRunner {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private TodoRepository todoRepository;
+
+    @Autowired
+    private UserRepository userRepository;
     
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }
 
+
     @Override
     public void run(String... args) throws Exception {
+
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(AppConfiguration.class);
+        MongoOperations mongoOperation = (MongoOperations) applicationContext.getBean("mongoTemplate");
+
+        Query query = new Query();
+        query.addCriteria(Criteria.where("firstName").is("Alice"));
+        Customer customer = mongoOperation.findOne(query, Customer.class);
+
+        System.out.println(customer);
+
+
 
         customerRepository.deleteAll();
 
@@ -57,10 +87,47 @@ public class Application implements CommandLineRunner {
         System.out.println("Paginated search of products by criteria:");
         System.out.println("-------------------------------");
         
-        productRepository.findByDescriptionContaining("plus", PageRequest.of(0, 2)).stream()
+        productRepository.findByDescriptionContaining("plus", PageRequest.of(0, 4)).stream()
         	.forEach(System.out::println);
-   
+
+
         System.out.println();
+        todoRepository.deleteAll();
+
+        System.out.println("Todo ejercicio");
+        System.out.println("-------------------------------");
+        System.out.println();
+
+        todoRepository.save(new Todo("travel to Galapagos","charles@natural.com", "pending", new Date(), 10));
+        todoRepository.save(new Todo("travel to Chia","david@natural.com", "in progress", new Date(), 6));
+        todoRepository.save(new Todo("travel to Galapagos","charles@natural.com", "in progress", new Date(), 1));
+        todoRepository.findByResponsible("charles@natural.com", PageRequest.of(0, 4)).stream()
+                .forEach(System.out::println);
+
+        System.out.println("-------------------------------");
+
+        System.out.println();
+        userRepository.deleteAll();
+
+        System.out.println("User ejercicio");
+
+        System.out.println("-------------------------------");
+
+        System.out.println();
+
+        userRepository.save(new User("david@gmail.com","david"));
+        userRepository.save(new User("juan@gmail.com","juan"));
+        userRepository.save(new User("andres@gmail.com","andres"));
+        userRepository.save(new User("david@gmail.com","santiago"));
+
+        userRepository.findByEmail("david@gmail.com").forEach(System.out::println);
+
+        System.out.println("-------------------------------");
+
+
+        todoRepository.save(new Todo("travel to cota","charles@natural.com", "pending", new Date(), 5));
+        todoRepository.save(new Todo("travel to Chia","david@natural.com", "pending", new Date(), 2));
+        todoRepository.save(new Todo("travel to bogota","charles@natural.com", "in progress", new Date(), 5));
     }
 
 }
